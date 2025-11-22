@@ -19,7 +19,7 @@ Assumptions:
 
 ---
 
-# 2. **High-Level Architecture**
+# 2. **Solution Architecture**
 
 ## 2.1 Architecture Approach
 
@@ -41,12 +41,9 @@ The approach will start small and prevent premature complexity while enabling lo
 
 - **ASP.NET Core Web API** (REST + OpenAPI).
 
-  - Clean endpoints (`/tasks`, `/comments`, `/attachments`)
-  - Standardized error model, paging, filtering.
+  - Simple, predictable, widely supported by third parties.
 
-- **Optional**: OData support for dynamic querying (use case: admin dashboards).
-
-- **Why REST**: simple, predictable, widely supported by third parties.
+- **Optional**: OData support for dynamic querying.
 
 ### **Authentication & Authorization**
 
@@ -57,14 +54,12 @@ The approach will start small and prevent premature complexity while enabling lo
 
 - **Access Control**:
 
-  - JWT tokens with claims (role, userId, tenant, permissions).
+  - JWT tokens with claims (role, userId, permissions).
   - Policy-based authorization for task-level rules.
 
-- **Alternative OSS options** (when cloud lock-in or pricing is an issue):
+- **OSS Alternative** (when cloud lock-in or pricing is an issue):
 
   - **Keycloak** (self-hosted OIDC provider)
-
-    - Good for multi-cloud, multi-tenant SaaS, custom login flows.
 
 ### **API Gateway**
 
@@ -102,6 +97,10 @@ The approach will start small and prevent premature complexity while enabling lo
   - TaskCreated, TaskAssigned, TaskOverdue events
   - Notification workers
   - Integration with external systems via topics/subscriptions
+
+- **OSS Alternative**:
+
+  - **RabbitMq**.
 
 ### **File Storage**
 
@@ -150,13 +149,10 @@ The approach will start small and prevent premature complexity while enabling lo
 
 - **Core Domain Package**
   Base entity classes, domain events, value objects, error/result types.
-
 - **Data Access Package**
   EF Core base `DbContext`, common repository patterns, soft-delete, auditing, and optional outbox support.
-
 - **Messaging Package**
   Abstractions + wrappers for Azure Service Bus or RabbitMQ (publish/subscribe, message envelopes).
-
 - **Web/Observability Package**
   Standard API behaviors: exception middleware, validation responses, correlation IDs, telemetry setup.
 
@@ -195,6 +191,7 @@ OpenAPI (Swagger) specification for your Tasks CRUD API, including OData support
   - Guards against breaking changes for frontend or integrations.
   * **Tools:**
     - OpenAPI validator
+    - Pact
 - **Performance & Load Testing**: Ensures scalability under high load.
   - **Tools:**
     - **k6**
@@ -358,3 +355,80 @@ Promoted through **Dev → QA → UAT → Staging → Production** using approva
 
 - Secrets stored in **Azure Key Vault**
 - Per-environment variables in Azure App Service Configuration
+
+### **Environment Promotion**
+
+- **Dev → QA**
+
+  - Requires CI passing (tests, SonarQube, security scan).
+  - Dev tests the features work as expected in Dev environemnt
+  - Auto-approval; no manual reviewer needed.
+  - If there are too many PRs in a day, auto-approval can make QA environment unstable for testing. Can change to manual approval by **QA Lead**
+
+- **QA → UAT**
+  Requires successful QA deployment and regression tests. Sign-off by **QA Lead**. Approved by **Product Owner**
+
+- **UAT → Staging**
+  Requires UAT sign-off and no high-severity defects. Approved by **Product Owner**.
+
+- **Staging → Production**
+  Requires successful smoke tests, performance checks, and security scan. Approved by **Release Manager**
+
+## **2.6 DevOps Practices**
+
+Ensuring fast, reliable delivery through automation, consistency, and observability.
+
+- **Infrastructure as Code (IaC)**
+
+  - Environments provisioned and updated using Bicep or Terraform.
+  - Source-controlled, versioned, and validated through CI.
+
+* **Automated CI/CD (Azure DevOps Pipelines)**
+
+  - CI handles build, tests, linting, quality checks, and container packaging.
+  - CD manages environment promotions (Dev → QA → UAT → Staging → Prod), slot swaps, and smoke tests.
+
+* **Configuration & Secrets Management**
+
+  - Centralized via **Azure Key Vault**.
+  - Environment-specific settings provided through App Service configuration or Static Web App configuration.
+  - No secrets stored in code or pipelines.
+
+* **Observability & Monitoring**
+
+  - Application Insights + OpenTelemetry for logs, metrics, traces, and dashboards.
+  - Alerts for failures, latency, error rates, queue backlogs, and resource thresholds.
+
+## **2.7 Use of AI Tools**
+
+AI-assisted development is used to accelerate productivity, reduce repetitive work, and enhance code quality.
+
+**Recommended AI Tools:**
+
+- **GitHub Copilot / Copilot Chat**
+
+  - Generating boilerplate code (DTOs, controllers, React components).
+  - Generating UI components by connecting with Figma MCP.
+  - Assisting with unit tests and integration test scaffolding
+  - Helping developers explore frameworks and design patterns faster
+  - Refactoring proposals (cleaning up legacy or verbose code)
+  - Writing documentation, comments, commit messages
+  - Generating test cases from requirements
+  - Creating automatic E2E test scripts (Playwright/Cypress)
+  - Enhancing regression test coverage through scenario exploration
+  - Writing YAML pipelines (Azure DevOps)
+  - Generating IaC templates (Bicep/Terraform)
+
+- **ChatGPT / Azure OpenAI**
+
+  - Producing architecture drafts, ADRs (Architecture Decision Records)
+  - Acting as an interactive design assistant to brainstorm with
+
+**Measuring the Impact of AI Tools:**
+
+- **Developer Productivity & Satisfaction**
+
+  - Time saved on boilerplate, refactoring, documentation
+  - Survey feedback on AI-assisted workflows
+  - Reduction in context-switching and manual repetitive tasks
+  - Faster troubleshooting using AI-assisted log and error analysis
