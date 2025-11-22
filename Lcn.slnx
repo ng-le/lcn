@@ -1,0 +1,32 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Aspire/">
+    <Project Path="src/Aspire/Lcn.AppHost/Lcn.AppHost.csproj" />
+    <Project Path="src/Aspire/Lcn.ServiceDefaults/Lcn.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/src/Framework/">
+    <Project Path="src/Framework/Lcn.Caching.Abstractions/Lcn.Caching.Abstractions.csproj" Id="8dcfcf5c-c988-464d-9c1f-f0d1f1493eaf" />
+    <Project Path="src/Framework/Lcn.Caching.Redis/Lcn.Caching.Redis.csproj" Id="adac8961-330b-486c-a600-24d56f921409" />
+    <Project Path="src/Framework/Lcn.Core/Lcn.Core.csproj" />
+    <Project Path="src/Framework/Lcn.CQRS/Lcn.CQRS.csproj" Id="719b0778-8e36-4001-acd5-8c630f3d5ac0" />
+    <Project Path="src/Framework/Lcn.DataAccess.Abstractions/Lcn.DataAccess.Abstractions.csproj" Id="80364e74-c88e-48aa-8397-644a9bab57fd" />
+    <Project Path="src/Framework/Lcn.DataAccess.EfCore/Lcn.DataAccess.EfCore.csproj" Id="77cac94b-1c7f-42f9-82cf-a371a9a48152" />
+    <Project Path="src/Framework/Lcn.Messaging.Abstractions/Lcn.Messaging.Abstractions.csproj" Id="00763d5b-c6d1-492d-a9e1-0364888f5cc6" />
+    <Project Path="src/Framework/Lcn.Messaging.AzureServiceBus/Lcn.Messaging.AzureServiceBus.csproj" Id="1ffccda8-3d25-4a0a-86d9-192555eda4e5" />
+    <Project Path="src/Framework/Lcn.Observability/Lcn.Observability.csproj" Id="dd8abda6-eba6-4ae5-b2d0-125eed5b96fb" />
+    <Project Path="src/Framework/Lcn.Web/Lcn.Web.csproj" Id="c017b738-b55e-4cf2-b9ca-c7a631beeb8e" />
+  </Folder>
+  <Folder Name="/src/Services/" />
+  <Folder Name="/src/Services/Task/" />
+  <Folder Name="/src/Services/Task/src/">
+    <Project Path="src/Services/Task/Task.Api/Task.Api.csproj" />
+    <Project Path="src/Services/Task/Task.Application/Task.Application.csproj" Id="187e80ff-9792-4bc1-8dd0-5e01604414d7" />
+    <Project Path="src/Services/Task/Task.Domain/Task.Domain.csproj" Id="84d8481e-dd2c-4762-a2e0-c5badd06c0e5" />
+    <Project Path="src/Services/Task/Task.Infrastructure/Task.Infrastructure.csproj" Id="aa01fb50-4e2f-4df8-90bb-fde0607cd7cd" />
+  </Folder>
+  <Folder Name="/src/Services/Task/tests/">
+    <Project Path="src/Services/Task/Task.ContractTests/Task.ContractTests.csproj" Id="c2921f7e-5db2-47ce-9bab-182fff752b07" />
+    <Project Path="src/Services/Task/Task.IntegrationTests/Task.IntegrationTests.csproj" Id="e1116363-4978-4f30-a209-f1b58abf7c3b" />
+    <Project Path="src/Services/Task/Task.UnitTests/Task.UnitTests.csproj" Id="7af585fe-f868-44ea-a1a1-eeee378b1992" />
+  </Folder>
+</Solution>

@@ -1,0 +1,360 @@
+# **Task Management System — Solution Architecture Proposal**
+
+---
+
+# 1. **Goals**
+
+This document proposes a **cloud-ready, scalable, secure Task Management System** designed for both internal and external users.
+
+Key goals:
+
+- Create, upload attachments, assign, notify users and track tasks.
+- Support authentication & authorization.
+- Provide an API for integrations.
+- Have a web UI for users.
+
+Assumptions:
+
+- The company primarily uses Azure Cloud.
+
+---
+
+# 2. **High-Level Architecture**
+
+## 2.1 Architecture Approach
+
+The approach will start small and prevent premature complexity while enabling long-term evolution.
+
+- Start with **monolith**, one deployable backend (simple ops, fast development) with docker container. Internally composed of features with clear boudaries.
+- Can consider **modular monlith** from beginning where features can be extracted **modules**, depends on the size of that features.
+- Later can be extracted to **microservices** with small effort.
+
+## 2.2 Key components and technology decisions
+
+### **Web UI**
+
+- **React + TypeScript** SPA communicating via HTTPS + JWT.
+- Benefits: large ecosystem, excellent tooling.
+- **Alternatives**: Vue, Angular — choose based on team capability.
+
+### **Public API**
+
+- **ASP.NET Core Web API** (REST + OpenAPI).
+
+  - Clean endpoints (`/tasks`, `/comments`, `/attachments`)
+  - Standardized error model, paging, filtering.
+
+- **Optional**: OData support for dynamic querying (use case: admin dashboards).
+
+- **Why REST**: simple, predictable, widely supported by third parties.
+
+### **Authentication & Authorization**
+
+- **Azure Entra ID** for:
+
+  - Internal corporate users (Entra ID)
+  - External users (Entra External ID / Customer Identity)
+
+- **Access Control**:
+
+  - JWT tokens with claims (role, userId, tenant, permissions).
+  - Policy-based authorization for task-level rules.
+
+- **Alternative OSS options** (when cloud lock-in or pricing is an issue):
+
+  - **Keycloak** (self-hosted OIDC provider)
+
+    - Good for multi-cloud, multi-tenant SaaS, custom login flows.
+
+### **API Gateway**
+
+- **Azure API Management (APIM)**:
+
+  - JWT validation, rate limiting, quota for partners.
+  - Request/response transformations.
+  - IP allowlists for integrations.
+  - Versioning at the gateway layer.
+
+- **OSS Alternative**:
+
+  - **YARP (Yet Another Reverse Proxy)** in .NET for simple API gateway needs.
+  - Useful when you want full control or no APIM licensing cost.
+
+### **Database**
+
+- Recommend starting with relational database:
+
+  - **Option A: Azure SQL Database** (best for enterprise consistency, strong tooling).
+  - **Option B: PostgreSQL (Flexible Server)** (cost-efficient, rich JSON querying, OSS ecosystem).
+
+### **Caching**
+
+- **Azure Cache for Redis** for:
+
+  - Access tokens & session caching
+  - User profile & permission caching
+  - Populating task lists quickly
+
+### **Messaging / Eventing**
+
+- **Azure Service Bus** for:
+
+  - TaskCreated, TaskAssigned, TaskOverdue events
+  - Notification workers
+  - Integration with external systems via topics/subscriptions
+
+### **File Storage**
+
+- **Azure Blob Storage** with:
+
+  - Private containers
+  - SAS URL generation for secure downloads
+  - Virus scanning workflow (optional)
+
+### **Observability**
+
+- **OpenTelemetry** SDK for:
+
+  - Traces
+  - Logs
+  - Metrics
+
+  Export to **Azure Application Insights**.
+
+- **Alternatives**:
+
+  - **Prometheus + Grafana** (OSS observability stack)
+  - **Loki / Tempo** (for logs/traces)
+  - Useful if adopting Kubernetes and want cloud-agnostic observability.
+
+### **Deployment**
+
+- Containerized application:
+
+  - Build using Azure DevOps
+  - Push to **Azure Container Registry**
+  - Deploy to **Azure App Service for Containers**
+
+- Later (higher scale): **Container Apps** or **AKS**
+
+## 2.3 Backend Service Development
+
+### **Architecture Style**
+
+- Follow **Clean Architecture**: separation of Domain, Application, Infrastructure, and API layers.
+- Apply **DDD**: aggregates, entities, value objects, domain events.
+- Organize code **by feature** (Tasks, Attachments, Notifications) for clarity and maintainability.
+- Use **.NET Aspire** for local orchestration of API, DB, cache, and messaging during development.
+
+### **Internal NuGet Packages (Shared Building Blocks)**
+
+- **Core Domain Package**
+  Base entity classes, domain events, value objects, error/result types.
+
+- **Data Access Package**
+  EF Core base `DbContext`, common repository patterns, soft-delete, auditing, and optional outbox support.
+
+- **Messaging Package**
+  Abstractions + wrappers for Azure Service Bus or RabbitMQ (publish/subscribe, message envelopes).
+
+- **Web/Observability Package**
+  Standard API behaviors: exception middleware, validation responses, correlation IDs, telemetry setup.
+
+These packages ensure reusability if modules are extracted into standalone services later.
+
+### **Important Note — Trend in .NET OSS Libraries Becoming Commercial**
+
+In recent years, several widely used .NET OSS libraries have shifted to **commercial / restricted licensing** (e.g., **MediatR**, **MassTransit**, **AutoMapper**, **Hangfire**, etc). This trend impacts long-term architecture decisions.
+
+- Prefer **in-house abstractions** (simple request/handler patterns, messaging wrappers).
+- Avoid deep coupling to frameworks that may introduce licensing cost later.
+- Keep **shared building blocks** (domain, data access, messaging) inside our internal NuGet packages to reduce external dependency risk.
+- Favor **built-in .NET capabilities** (+ Aspire, + OTel) wherever possible.
+
+This approach keeps the backend **future-proof, maintainable, and cost-predictable**.
+
+### **API Design**
+
+OpenAPI (Swagger) specification for your Tasks CRUD API, including OData support for listing: [task.openapi.yaml](openapi-spec/task.openapi.yaml)
+
+- The spec file can be used to align and agreement between teams's integration, for example: front-end and back-end teams.
+- It can be integrated to CI/CD pipelines to populate endpoints for API gateway.
+
+### **Testing Strategy**
+
+- **Unit Testing**: Focus on **Domain** and **Application** layers (business rules, validation, domain events).
+  - **Tools**: **xUnit, Moq, FluentAssertions**.
+- **Integration Testing**: Validates real interactions with infrastructure components:
+  - EF Core + SQL/Postgres (via Testcontainers)
+  - API endpoints using ASP.NET Core `WebApplicationFactory`
+  * **Tools:**
+    - **Testcontainers for .NET**
+    - **ASP.NET Core Test Host**
+- **Contract/API Testing**:
+  - Ensures implementation matches **OpenAPI** specification.
+  - Guards against breaking changes for frontend or integrations.
+  * **Tools:**
+    - OpenAPI validator
+- **Performance & Load Testing**: Ensures scalability under high load.
+  - **Tools:**
+    - **k6**
+
+All tests are integrated into CI/CD pipelines.
+
+## **2.4 Frontend Development**
+
+### **Architecture Style**
+
+- Use **monorepo** structure with Turbo or Nx.
+- Use **feature-based structure** (Tasks, Auth, Notifications, Settings) instead of purely technical folders.
+- Follow **separation of concerns**:
+
+  - Presentational components (UI only)
+  - Container/hooks (data fetching, state, side effects)
+  - Shared UI components (buttons, layout, form controls)
+
+- Use **React Router** for client-side routing (e.g. `/tasks`, `/tasks/:id`).
+- Communication with backend via a typed **API client layer** (fetch/axios wrapper).
+
+### **State Management & Data Fetching**
+
+- Prefer **TanStack Query** (or similar) for:
+
+  - Server state (tasks list, task detail, user profile)
+  - Caching, deduplication, background refresh
+  - Built-in loading/error states and retries
+
+- Use **React Context** only for cross-cutting UI state (theme, current user, layout).
+- Keep **local UI state** inside components where possible (forms, dialogs).
+- Need to consider carefully if want to use global state management like **Redux**. Most of the time, especially with enterprise application, we won't need it.
+
+### **API Integration & Security**
+
+- All API calls go through a **central API client**:
+
+  - Base URL, default headers, error handling, logging.
+  - Inject **JWT** from Azure Entra ID authentication (via MSAL or similar library).
+
+- Handle:
+
+  - Global 401/403 → redirect to login or show access denied.
+  - Consistent error messages from backend error envelope.
+
+### **UI/UX & Design System**
+
+- Use a **component library** (e.g. MUI, Ant Design, or internal design system) for consistency.
+- Responsive layout for desktop-first, tablet-friendly usage.
+- Accessibility best practices (ARIA, keyboard navigation): examples with radix, shadcn.
+
+### **Shared Frontend Utilities**
+
+- **Types & Models**: shared TypeScript types, aligned with backend OpenAPI spec (generated where possible).
+- **Validation**: form schemas using `Zod` for Typescript first.
+- **Logging & Telemetry**: integrate with Application Insights JS SDK for page views, custom events, and errors.
+
+### **Frontend Testing Strategy**
+
+- **Unit & Component Testing**
+
+  - Covers React components, hooks, and utilities.
+  - Ensures UI renders correctly and handles user interactions.
+  - **Tools:**
+    - **Jest**
+    - **React Testing Library**
+
+- **Integration / UI Testing**
+
+  - Component interaction tests (form submission, validation, navigation).
+
+  * **Tools:**
+    - **React Testing Library**
+
+- **End-to-End Testing (Browser Automation)**
+
+  - Full user journeys:
+
+  * **Tools:**
+    - **Playwright**
+
+- All tests run in **CI** and are part of the **quality gates**.
+
+## **2.5 CI/CD with Azure DevOps**
+
+### **Development Workflow**
+
+- Use **trunk-based development**:
+
+  - Developers create short-lived feature branches.
+  - All changes merge into `main` through **Pull Requests (PRs)**.
+
+- PRs require:
+
+  - Code review
+  - Successful build & tests
+  - SonarQube quality gate passed
+  - No critical or high vulnerabilities
+
+This ensures continuous integration with high-quality code.
+
+### **Continuous Integration (CI)**
+
+Triggered on every PR and commit to `main`.  
+The same CI pipeline runs **backend** and **frontend** stages, then produces deployable artifacts (container images and static bundles).
+
+#### **Backend CI + Container Build**
+
+- Restore & build .NET backend
+- Run:
+  - Unit tests
+  - Integration tests (Testcontainers)
+  - API contract validation (OpenAPI)
+- Static code quality:
+  - **SonarQube** analysis
+  - Dependency vulnerability scan
+- Generate build artifacts:
+  - Compiled binaries
+  - OpenAPI spec
+  - Test results
+- Build and publish Docker images:
+  - Build Docker images for:
+    - API
+  - Tag images with branch name, commit SHA, and version
+  - Push images to **Azure Container Registry (ACR)**
+
+#### **Frontend CI (React) + Bundle Build**
+
+- Install dependencies (npm/yarn)
+- Run:
+  - Unit tests (Jest)
+  - Linting (ESLint)
+  - Type checking (TS)
+  - SonarQube for JavaScript/TypeScript
+- Build optimized production bundle
+- Store build output as artifact, ready for deployment to:
+  - **Azure App Service (Linux)**, or
+  - **Azure Static Web App**
+
+### **Continuous Deployment (CD)**
+
+Promoted through **Dev → QA → UAT → Staging → Production** using approvals.
+
+#### Backend Deployment
+
+- Deploy container from ACR to **Azure App Service for Containers**
+- Inject app settings and secrets via **Azure Key Vault**
+- Use **slot swap** in staging → production for zero-downtime releases
+
+#### Frontend Deployment
+
+- Upload build artifact to:
+
+  - **Azure App Service (static site)**
+  - or **Azure Static Web Apps**
+
+- Cache-busting enabled using versioned bundles
+- Optional: CDN integration for global performance
+
+### **Environment Configuration**
+
+- Secrets stored in **Azure Key Vault**
+- Per-environment variables in Azure App Service Configuration

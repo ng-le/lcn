@@ -1,0 +1,152 @@
+openapi: 3.0.1
+info:
+  title: Task Management API
+  version: v1
+
+paths:
+  /api/v1/tasks:
+    get:
+      summary: List tasks (supports OData query options)
+      description: |
+        Returns a list of tasks with optional OData filtering, sorting, and paging.
+        Supports: $filter, $orderby, $top, $skip, $count.
+      parameters:
+        - name: $filter
+          in: query
+          schema: { type: string }
+          required: false
+        - name: $orderby
+          in: query
+          schema: { type: string }
+          required: false
+        - name: $top
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100 }
+          required: false
+        - name: $skip
+          in: query
+          schema: { type: integer, minimum: 0 }
+          required: false
+        - name: $count
+          in: query
+          schema: { type: boolean }
+          required: false
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskListResponse"
+
+    post:
+      summary: Create a new task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /api/v1/tasks/{id}:
+    get:
+      summary: Get a task by ID
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Task found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404": { description: Task not found }
+
+    put:
+      summary: Update a task
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404": { description: Task not found }
+
+    delete:
+      summary: Delete a task
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Task not found }
+
+components:
+  parameters:
+    TaskId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description: Task ID
+
+  schemas:
+    Task:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        status: { type: string }
+        priority: { type: string }
+        assigneeId: { type: string }
+        createdById: { type: string }
+        dueDate: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    CreateTaskRequest:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        assigneeId: { type: string }
+        priority: { type: string }
+        dueDate: { type: string, format: date-time }
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        priority: { type: string }
+        status: { type: string }
+        assigneeId: { type: string }
+        dueDate: { type: string, format: date-time }
+
+    TaskListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        count:
+          type: integer
+          description: Total count when $count=true
