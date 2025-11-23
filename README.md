@@ -489,9 +489,13 @@ AI-assisted development is used to accelerate productivity, reduce repetitive wo
 
 **Measuring the Impact of AI Tools:**
 
-- **Developer Productivity & Satisfaction**
+- **Developer Survey Productivity & Satisfaction**
 
   - Time saved on boilerplate, refactoring, documentation
   - Survey feedback on AI-assisted workflows
   - Reduction in context-switching and manual repetitive tasks
   - Faster troubleshooting using AI-assisted log and error analysis
+
+The main way that I see now on measuring the impact of AI Tools is by using survey, report from dev teams on using that specific tools after a period of time (often 1 month). The results reported often from 10-30% on productivity increased.
+However, these measurements are largely **subjective**, relying on personal perception rather than objective metrics. The reported improvements can vary widely between developers and are influenced by familiarity with the tool, task type, and even individual working styles.
+From a management perspective, this makes the reported productivity increase **difficult to enforce or translate into concrete performance metrics**.
