@@ -1,6 +1,43 @@
 # **Task Management System — Solution Architecture Proposal**
 
----
+## **Table of Contents**
+
+1. [Goals](#1-goals)
+2. [Solution Architecture](#2-solution-architecture)
+   - 2.1 [Architecture Approach](#21-architecture-approach)
+   - 2.2 [Key Components and Technology Decisions](#22-key-components-and-technology-decisions)
+     - [Web UI](#web-ui)
+     - [Public API](#public-api)
+     - [Authentication & Authorization](#authentication--authorization)
+     - [API Gateway](#api-gateway)
+     - [Database](#database)
+     - [Caching](#caching)
+     - [Messaging / Eventing](#messaging--eventing)
+     - [File Storage](#file-storage)
+     - [Observability](#observability)
+     - [Deployment](#deployment)
+   - 2.3 [Backend Service Development](#23-backend-service-development)
+     - [Architecture Style](#architecture-style)
+     - [Internal NuGet Packages (Shared Building Blocks)](#internal-nuget-packages-shared-building-blocks)
+     - [Important Note — Trend in .NET OSS Libraries Becoming Commercial](#important-note--trend-in-net-oss-libraries-becoming-commercial)
+     - [API Design](#api-design)
+     - [Testing Strategy](#testing-strategy)
+     - [Solution Structure](#solution-structure)
+   - 2.4 [Frontend Development](#24-frontend-development)
+     - [Architecture Style](#architecture-style-1)
+     - [State Management & Data Fetching](#state-management--data-fetching)
+     - [API Integration & Security](#api-integration--security)
+     - [UI/UX & Design System](#uiux--design-system)
+     - [Shared Frontend Utilities](#shared-frontend-utilities)
+     - [Frontend Testing Strategy](#frontend-testing-strategy)
+   - 2.5 [CI/CD with Azure DevOps](#25-cicd-with-azure-devops)
+     - [Development Workflow](#development-workflow)
+     - [Continuous Integration (CI)](#continuous-integration-ci)
+     - [Continuous Deployment (CD)](#continuous-deployment-cd)
+     - [Environment Configuration](#environment-configuration)
+     - [Environment Promotion](#environment-promotion)
+   - 2.6 [DevOps Practices](#26-devops-practices)
+   - 2.7 [Use of AI Tools](#27-use-of-ai-tools)
 
 # 1. **Goals**
 
@@ -31,6 +68,8 @@ The approach will start small and prevent premature complexity while enabling lo
 
 ## 2.2 Key components and technology decisions
 
+![Architecture](archtecture.png)
+
 ### **Web UI**
 
 - **React + TypeScript** SPA communicating via HTTPS + JWT.
@@ -51,6 +90,7 @@ The approach will start small and prevent premature complexity while enabling lo
 
   - Internal corporate users (Entra ID)
   - External users (Entra External ID / Customer Identity)
+  - External Integrations (3rd-party systems calling our API): **OAuth2 client credentials** via Azure Entra ID. Each partner gets its own Entra app registration (client ID/secret or certificate). Partner calls Entra /token → gets access token (JWT) → calls our API via APIM with **Authorization: Bearer <token>**.
 
 - **Access Control**:
 
@@ -61,6 +101,21 @@ The approach will start small and prevent premature complexity while enabling lo
 
   - **Keycloak** (self-hosted OIDC provider)
 
+### **Application Gateway / Front Door**
+
+- **Azure Front Door** (recommended for global deployments):
+
+  - Global load balancing and routing across regions.
+  - Built-in WAF (Web Application Firewall) for protection against common threats (OWASP Top 10, bot attacks).
+  - SSL/TLS termination and certificate management.
+  - Caching static content (React bundles, images) at edge locations.
+
+- **Azure Application Gateway** (for single-region scenarios):
+
+  - Regional load balancing with URL-based routing.
+  - Integrated WAF for security.
+  - SSL offloading.
+
 ### **API Gateway**
 
 - **Azure API Management (APIM)**:
@@ -68,7 +123,6 @@ The approach will start small and prevent premature complexity while enabling lo
   - JWT validation, rate limiting, quota for partners.
   - Request/response transformations.
   - IP allowlists for integrations.
-  - Versioning at the gateway layer.
 
 - **OSS Alternative**:
 
@@ -88,7 +142,6 @@ The approach will start small and prevent premature complexity while enabling lo
 
   - Access tokens & session caching
   - User profile & permission caching
-  - Populating task lists quickly
 
 ### **Messaging / Eventing**
 
@@ -108,7 +161,6 @@ The approach will start small and prevent premature complexity while enabling lo
 
   - Private containers
   - SAS URL generation for secure downloads
-  - Virus scanning workflow (optional)
 
 ### **Observability**
 
@@ -117,8 +169,15 @@ The approach will start small and prevent premature complexity while enabling lo
   - Traces
   - Logs
   - Metrics
+    Export to **Azure Application Insights**.
 
-  Export to **Azure Application Insights**.
+- **Azure Monitor** for platform metrics & logs from:
+
+  - Azure App Service for Containers
+  - Azure Front Door / App Gateway
+  - Azure API Management
+  - Azure SQL / PostgreSQL
+  - Service Bus, Redis, Storage, etc.
 
 - **Alternatives**:
 
@@ -197,6 +256,10 @@ OpenAPI (Swagger) specification for your Tasks CRUD API, including OData support
     - **k6**
 
 All tests are integrated into CI/CD pipelines.
+
+### **Solution Structure**
+
+![Solution Structure](backend_project_structure.png)
 
 ## **2.4 Frontend Development**
 
