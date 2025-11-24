@@ -265,7 +265,7 @@ All tests are integrated into CI/CD pipelines.
 
 ### **Architecture Style**
 
-- Use **monorepo** structure with Turbo or Nx.
+- Use **monorepo** structure with pnpm and Turbo or Nx.
 - Use **feature-based structure** (Tasks, Auth, Notifications, Settings) instead of purely technical folders.
 - Follow **separation of concerns**:
 
@@ -383,7 +383,7 @@ The same CI pipeline runs **backend** and **frontend** stages, then produces dep
 
 #### **Frontend CI (React) + Bundle Build**
 
-- Install dependencies (npm/yarn)
+- Install dependencies (pnpm)
 - Run:
   - Unit tests (Jest)
   - Linting (ESLint)
