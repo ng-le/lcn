@@ -230,7 +230,7 @@ This approach keeps the backend **future-proof, maintainable, and cost-predictab
 
 ### **API Design**
 
-OpenAPI (Swagger) specification for your Tasks CRUD API, including OData support for listing: [task.openapi.yaml](openapi-spec/task.openapi.yaml)
+OpenAPI (Swagger) specification for Tasks CRUD API, including OData support for listing: [task.openapi.yaml](openapi-spec/task.openapi.yaml)
 
 - The spec file can be used to align and agreement between teams's integration, for example: front-end and back-end teams.
 - It can be integrated to CI/CD pipelines to populate endpoints for API gateway.
