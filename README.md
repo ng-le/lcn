@@ -169,7 +169,7 @@ The approach will start small and prevent premature complexity while enabling lo
   - Traces
   - Logs
   - Metrics
-    Export to **Azure Application Insights**.
+  - Export to **Azure Application Insights**.
 
 - **Azure Monitor** for platform metrics & logs from:
 
